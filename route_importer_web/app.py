@@ -211,3 +211,6 @@ if __name__ == '__main__':
         port=8080,
         debug=True
     )
+
+# Vercel部署需要这个
+app.debug = False
