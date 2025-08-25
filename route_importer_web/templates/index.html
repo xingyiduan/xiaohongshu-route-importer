@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>路线导入器 - 从小红书笔记生成步行路线</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>🗺️ 路线导入器</h1>
+            <p>从小红书笔记生成步行路线</p>
+        </header>
+
+        <!-- 主要内容区域 -->
+        <main class="main-content">
+            <!-- 输入区域 -->
+            <div class="input-section" id="inputSection">
+                <div class="input-container">
+                    <label for="noteUrl">小红书笔记链接</label>
+                    <div class="url-input-group">
+                        <input type="url" id="noteUrl" placeholder="https://www.xiaohongshu.com/..." required>
+                        <button type="button" id="parseBtn" class="btn btn-primary">
+                            <span class="btn-text">开始解析</span>
+                            <span class="btn-loading" style="display: none;">
+                                <span class="spinner"></span>
+                                解析中...
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 解析结果区域 -->
+            <div class="result-section" id="resultSection" style="display: none;">
+                <!-- 路线信息卡片 -->
+                <div class="route-info-card">
+                    <div class="route-header">
+                        <h2 id="routeTitle">路线标题</h2>
+                        <div class="route-meta">
+                            <span class="distance" id="routeDistance">距离: 计算中...</span>
+                            <span class="duration" id="routeDuration">时间: 计算中...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- 地点列表 -->
+                    <div class="places-list" id="placesList">
+                        <!-- 地点将通过JavaScript动态添加 -->
+                    </div>
+                    
+                    <!-- 操作按钮 -->
+                    <div class="route-actions">
+                        <button type="button" id="openInMapsBtn" class="btn btn-secondary">
+                            📱 在地图App中打开
+                        </button>
+                        <button type="button" id="saveRouteBtn" class="btn btn-success">
+                            💾 保存路线
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 地图区域 -->
+                <div class="map-container">
+                    <div id="map" class="map"></div>
+                    <div class="map-overlay">
+                        <div class="map-controls">
+                            <button type="button" id="centerMapBtn" class="btn btn-small">
+                                📍 定位
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 加载状态 -->
+            <div class="loading-section" id="loadingSection" style="display: none;">
+                <div class="loading-content">
+                    <div class="spinner large"></div>
+                    <p>正在解析小红书笔记...</p>
+                </div>
+            </div>
+
+            <!-- 错误提示 -->
+            <div class="error-section" id="errorSection" style="display: none;">
+                <div class="error-content">
+                    <span class="error-icon">❌</span>
+                    <p id="errorMessage">解析失败</p>
+                    <button type="button" id="retryBtn" class="btn btn-primary">重试</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部 -->
+        <footer class="footer">
+            <p>&copy; 2025 路线导入器 - 让旅行更简单</p>
+        </footer>
+    </div>
+
+    <!-- 保存路线弹窗 -->
+    <div class="modal" id="saveModal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>保存路线</h3>
+                <button type="button" class="close-btn" id="closeModalBtn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="routeName">路线名称</label>
+                    <input type="text" id="routeName" placeholder="输入路线名称">
+                </div>
+                <div class="form-group">
+                    <label for="routeDescription">路线描述</label>
+                    <textarea id="routeDescription" placeholder="输入路线描述（可选）"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelSaveBtn">取消</button>
+                <button type="button" class="btn btn-primary" id="confirmSaveBtn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 成功提示 -->
+    <div class="toast" id="toast" style="display: none;">
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
