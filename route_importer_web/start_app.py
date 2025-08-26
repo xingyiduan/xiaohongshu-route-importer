@@ -17,7 +17,7 @@ class AppLauncher:
     """应用启动器"""
     
     def __init__(self):
-        self.port = 8080
+        self.port = 8081
         self.app_file = "app_integrated.py"
         self.required_files = [
             "volcengine_douban_final.py",

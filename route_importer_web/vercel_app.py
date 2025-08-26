@@ -8,3 +8,12 @@ from app import app
 
 # 导出Flask应用实例供Vercel使用
 app.debug = False
+
+# 确保数据库初始化
+try:
+    app.db.init_database()
+except:
+    pass
+
+# 导出应用实例
+application = app
