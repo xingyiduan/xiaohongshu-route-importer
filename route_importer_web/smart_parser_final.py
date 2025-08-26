@@ -73,8 +73,19 @@ class SmartParser:
             
             try:
                 result = self.volcengine_parser.parse_note(text, url)
-                if result and result.get('places') and len(result.get('places', [])) > 0:
-                    self.logger.info(f"火山引擎豆包AI解析成功！提取到 {len(result.get('places', []))} 个POI")
+                # 检查多路线结构或单路线结构
+                places_count = 0
+                if result and result.get('routes'):
+                    # 多路线结构：统计所有路线的地点总数
+                    for route in result['routes']:
+                        if route.get('places'):
+                            places_count += len(route['places'])
+                elif result and result.get('places'):
+                    # 单路线结构：直接统计地点数量
+                    places_count = len(result['places'])
+                
+                if result and places_count > 0:
+                    self.logger.info(f"火山引擎豆包AI解析成功！提取到 {places_count} 个POI")
                     return result
                 else:
                     self.logger.warning("火山引擎豆包AI解析失败或无POI结果")
@@ -87,8 +98,19 @@ class SmartParser:
             
             try:
                 result = self.rule_parser.parse_note(url)
-                if result and result.get('places'):
-                    self.logger.info(f"规则解析器解析成功！提取到 {len(result.get('places', []))} 个POI")
+                # 检查多路线结构或单路线结构
+                places_count = 0
+                if result and result.get('routes'):
+                    # 多路线结构：统计所有路线的地点总数
+                    for route in result['routes']:
+                        if route.get('places'):
+                            places_count += len(route['places'])
+                elif result and result.get('places'):
+                    # 单路线结构：直接统计地点数量
+                    places_count = len(result['places'])
+                
+                if result and places_count > 0:
+                    self.logger.info(f"规则解析器解析成功！提取到 {places_count} 个POI")
                     return result
                 else:
                     self.logger.warning("规则解析器解析失败或无结果")

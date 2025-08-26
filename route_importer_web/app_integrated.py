@@ -28,7 +28,7 @@ db = Database()
 @app.route('/')
 def index():
     """主页"""
-    return render_template('index.html')
+    return render_template('index_integrated.html')
 
 @app.route('/api/parse-note', methods=['POST'])
 def parse_note():
@@ -51,12 +51,23 @@ def parse_note():
         # 保存解析结果到session
         session['parsed_note'] = parsed_note
         
-        app.logger.info(f"解析成功，提取到 {len(parsed_note.get('places', []))} 个POI")
+        # 计算总地点数量（支持多路线结构）
+        total_places = 0
+        if parsed_note.get('routes'):
+            # 多路线结构：统计所有路线的地点总数
+            for route in parsed_note['routes']:
+                if route.get('places'):
+                    total_places += len(route['places'])
+        elif parsed_note.get('places'):
+            # 单路线结构：直接统计地点数量
+            total_places = len(parsed_note['places'])
+        
+        app.logger.info(f"解析成功，提取到 {total_places} 个POI")
         
         return jsonify({
             'success': True,
             'data': parsed_note,
-            'message': f'成功提取到 {len(parsed_note.get("places", []))} 个地点'
+            'message': f'成功提取到 {total_places} 个地点'
         })
         
     except Exception as e:
@@ -72,7 +83,17 @@ def plan_route():
         if not parsed_note:
             return jsonify({'error': '没有可规划的路线数据'}), 400
         
-        places = parsed_note.get('places', [])
+        # 获取地点信息（支持多路线结构）
+        places = []
+        if parsed_note.get('routes'):
+            # 多路线结构：收集所有路线的地点
+            for route in parsed_note['routes']:
+                if route.get('places'):
+                    places.extend(route['places'])
+        elif parsed_note.get('places'):
+            # 单路线结构：直接使用地点列表
+            places = parsed_note['places']
+        
         if not places:
             return jsonify({'error': '没有地点信息'}), 400
         
@@ -110,6 +131,17 @@ def save_route():
         if not parsed_note or not planned_route:
             return jsonify({'error': '没有可保存的路线数据'}), 400
         
+        # 获取地点信息（支持多路线结构）
+        places = []
+        if parsed_note.get('routes'):
+            # 多路线结构：收集所有路线的地点
+            for route in parsed_note['routes']:
+                if route.get('places'):
+                    places.extend(route['places'])
+        elif parsed_note.get('places'):
+            # 单路线结构：直接使用地点列表
+            places = parsed_note.get('places', [])
+        
         # 构建完整的路线信息
         route_info = {
             'id': f"route_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
@@ -117,7 +149,7 @@ def save_route():
             'description': data.get('description', parsed_note.get('content', '')),
             'source': '小红书',
             'source_url': data.get('source_url', ''),
-            'places': parsed_note.get('places', []),
+            'places': places,
             'route': planned_route.get('route', []),
             'distance': planned_route.get('distance', 0),
             'duration': planned_route.get('duration', 0),

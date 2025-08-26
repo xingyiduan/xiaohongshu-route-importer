@@ -15,18 +15,21 @@ class VolcengineDoubanParser:
     
     def __init__(self, api_key: str = None):
         """初始化火山引擎豆包API解析器"""
+        # 设置日志
+        self.logger = logging.getLogger(__name__)
+        
         # 优先使用传入的API密钥，其次使用环境变量
         if api_key and api_key != "your_volcengine_api_key_here":
             self.api_key = api_key
         else:
             import os
-            self.api_key = os.environ.get('VOLCENGINE_API_KEY') or "your_volcengine_api_key_here"
+            self.api_key = os.environ.get('VOLCENGINE_API_KEY')
+            if not self.api_key:
+                self.logger.error("未设置VOLCENGINE_API_KEY环境变量")
+                self.api_key = "your_volcengine_api_key_here"
         
         # 火山引擎豆包API正确端点
         self.api_url = "https://ark.cn-beijing.volces.com/api/v3/chat/completions"
-        
-        # 设置日志
-        self.logger = logging.getLogger(__name__)
         
         # 设置请求头 - 使用Bearer认证
         self.headers = {
@@ -158,18 +161,28 @@ class VolcengineDoubanParser:
     def _build_prompt(self, text: str) -> str:
         """构建发送给豆包的提示词"""
         prompt = f"""
-你是一个专业的旅游路线分析助手。请分析以下小红书笔记，提取其中的地点信息（POI）。
+你是一个专业的旅游路线分析助手。请分析以下小红书笔记，提取其中的地点信息（POI）和路线结构。
 
 **任务要求：**
 1. 识别笔记中提到的所有具体地点（如车站、景点、餐厅、商店等）
-2. 过滤掉描述性文字、人物、情感表达等非地点内容
-3. 返回结构化的JSON数据
+2. 识别笔记中提到的多个路线（如Day1、Day2、路线A、路线B等）
+3. 将地点按路线分组，支持多路线展示
+4. 过滤掉描述性文字、人物、情感表达等非地点内容
+5. 返回结构化的JSON数据
 
 **重要规则：**
 - 只提取有明确名称的地点，如"日暮里站"、"朝仓雕塑馆"、"Museca Times"等
 - 不要提取描述性内容，如"土耳其风格的灯具店"、"卖各种包包和伞的店"等
 - 如果某个地点没有具体名称，只有描述，则不要提取
 - 确保每个提取的地点都有明确的、可识别的名称
+- 识别路线标识词：Day1/Day2、路线1/路线2、第一天/第二天、上午/下午等
+
+**同名地点处理（重要）：**
+对于同名地点，请提供更精确的标识信息，避免混淆：
+- 优先使用地点的完整名称或别名
+- 添加城市/地区标识，如"星光大道（香港）"、"星光大道（上海）"
+- 提供英文名称作为alternative_name，如"Avenue of Stars"
+- 明确标注城市和区域信息
 
 **输入文本：**
 {text}
@@ -179,17 +192,35 @@ class VolcengineDoubanParser:
 {{
     "title": "笔记标题",
     "content": "笔记主要内容摘要",
-    "places": [
+    "routes": [
         {{
-            "name": "地点名称（必须是明确的地点名）",
-            "description": "地点描述",
-            "category": "地点类别",
-            "address": "地址信息（如果有）"
+            "route_id": "路线标识（如：day1、day2、route1、route2）",
+            "route_name": "路线名称（如：Day1 九龙半岛、Day2 港岛区域）",
+            "route_description": "路线描述",
+            "places": [
+                {{
+                    "name": "地点名称（必须是明确的地点名，对于同名地点请添加城市标识）",
+                    "alternative_name": "地点英文名称或别名（如果有）",
+                    "city": "所在城市（如：香港、上海、东京等）",
+                    "region": "具体区域（如：九龙半岛、港岛区域、新宿区等）",
+                    "description": "地点描述",
+                    "category": "地点类别",
+                    "address": "详细地址信息（如果有）",
+                    "order": "在路线中的顺序（数字）"
+                }}
+            ]
         }}
     ],
     "tags": ["标签1", "标签2"],
     "route_type": "路线类型（如：步行、观光等）"
 }}
+
+**路线识别标准：**
+✅ 应该识别的路线类型：
+- 按天数划分：Day1、Day2、第一天、第二天等
+- 按区域划分：九龙半岛、港岛区域、上午、下午等
+- 按主题划分：购物路线、美食路线、景点路线等
+- 按交通方式划分：步行路线、地铁路线、公交路线等
 
 **地点提取标准：**
 ✅ 应该提取的地点类型：
@@ -204,12 +235,20 @@ class VolcengineDoubanParser:
 - 情感表达、评价内容
 - 人物、时间等非地点信息
 
+**同名地点示例：**
+- 星光大道 → 星光大道（香港）或 Avenue of Stars（香港）
+- 新宿 → 新宿（东京）或 Shinjuku（东京）
+- 银座 → 银座（东京）或 Ginza（东京）
+
 **注意事项：**
 - 只提取真实存在的地点，不要包含虚拟或描述性内容
 - 地点名称要准确，不要包含多余的修饰词
+- 对于同名地点，务必添加城市标识，避免混淆
 - 如果文本中没有明确的地点信息，返回空的地点列表
 - 确保返回的是有效的JSON格式
 - 严格遵循地点提取标准，宁可少提取也不要提取不明确的地点
+- 如果笔记中只有一个路线，也要放在routes数组中
+- 每个路线都要有唯一的route_id和route_name
 
 请直接返回JSON，不要包含其他文字说明。
 """
@@ -231,31 +270,70 @@ class VolcengineDoubanParser:
             if not isinstance(parsed_data, dict):
                 return None
             
-            if 'places' not in parsed_data:
-                parsed_data['places'] = []
+            # 兼容旧格式，如果没有routes字段，创建默认结构
+            if 'routes' not in parsed_data:
+                if 'places' in parsed_data:
+                    # 将旧格式转换为新格式
+                    places = []
+                    for place in parsed_data['places']:
+                        if isinstance(place, dict) and 'name' in place:
+                            places.append({
+                                'name': place['name'],
+                                'description': place.get('description', ''),
+                                'address': place.get('address', place['name']),
+                                'category': self._map_category(place.get('category', '')),
+                                'coordinates': self._get_coordinates_from_address(place.get('address', place['name'])),
+                                'source': 'volcengine_douban',
+                                'order': len(places) + 1
+                            })
+                    
+                    parsed_data['routes'] = [{
+                        'route_id': 'route1',
+                        'route_name': parsed_data.get('title', '未命名路线'),
+                        'route_description': parsed_data.get('content', ''),
+                        'places': places
+                    }]
+                    # 保留places字段以兼容旧代码
+                    parsed_data['places'] = places
+                else:
+                    parsed_data['routes'] = []
             
+            # 处理新格式的routes
+            if 'routes' in parsed_data and isinstance(parsed_data['routes'], list):
+                for route in parsed_data['routes']:
+                    if isinstance(route, dict) and 'places' in route:
+                        places = []
+                        for place in route['places']:
+                            if isinstance(place, dict) and 'name' in place:
+                                places.append({
+                                    'name': place['name'],
+                                    'description': place.get('description', ''),
+                                    'address': place.get('address', place['name']),
+                                    'category': self._map_category(place.get('category', '')),
+                                    'coordinates': self._get_coordinates_from_address(place.get('address', place['name'])),
+                                    'source': 'volcengine_douban',
+                                    'order': place.get('order', len(places) + 1)
+                                })
+                        route['places'] = places
+                        
+                        # 确保route有必要的字段
+                        if 'route_id' not in route:
+                            route['route_id'] = f"route_{len(parsed_data['routes'])}"
+                        if 'route_name' not in route:
+                            route['route_name'] = f"路线{len(parsed_data['routes'])}"
+                        if 'route_description' not in route:
+                            route['route_description'] = ""
+            
+            # 设置默认值
             if 'title' not in parsed_data:
                 parsed_data['title'] = "未命名路线"
-            
             if 'content' not in parsed_data:
                 parsed_data['content'] = ""
-            
             if 'tags' not in parsed_data:
                 parsed_data['tags'] = []
+            if 'route_type' not in parsed_data:
+                parsed_data['route_type'] = "步行"
             
-            places = []
-            for place in parsed_data['places']:
-                if isinstance(place, dict) and 'name' in place:
-                    places.append({
-                        'name': place['name'],
-                        'description': place.get('description', ''),
-                        'address': place.get('address', place['name']),
-                        'category': self._map_category(place.get('category', '')),
-                        'coordinates': self._get_coordinates_from_address(place.get('address', place['name'])),
-                        'source': 'volcengine_douban'
-                    })
-            
-            parsed_data['places'] = places
             return parsed_data
             
         except json.JSONDecodeError as e:

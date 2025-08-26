@@ -3,84 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>小红书路线导入器 - AI增强版</title>
+    <title>路线导入器 - 从小红书笔记生成步行路线</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>🚀 小红书路线导入器</h1>
-            <p class="subtitle">AI智能解析 + 路线规划</p>
+        <!-- 头部 -->
+        <header class="header">
+            <h1>🗺️ 路线导入器</h1>
+            <p>从小红书笔记生成步行路线</p>
         </header>
 
-        <!-- 解析器状态信息 -->
-        <section id="parser-info-section" class="parser-status">
-            <!-- 解析器信息将通过JavaScript动态加载 -->
-        </section>
-
-        <!-- 输入区域 -->
-        <section class="input-section">
-            <div class="input-group">
-                <input type="url" id="url-input" placeholder="请输入小红书笔记链接..." required>
-                <button id="parse-btn" class="btn btn-primary">
-                    <span class="btn-icon">🤖</span>
-                    开始AI解析
-                </button>
-            </div>
-            <p class="input-hint">
-                💡 支持小红书链接，AI将自动提取地点信息并规划最佳步行路线
-            </p>
-        </section>
-
-        <!-- 加载状态 -->
-        <section id="loading-section" class="loading-section" style="display: none;">
-            <!-- 加载状态将通过JavaScript动态加载 -->
-        </section>
-
-        <!-- 错误提示 -->
-        <section id="error-section" class="error-section" style="display: none;">
-            <!-- 错误信息将通过JavaScript动态加载 -->
-        </section>
-
-        <!-- 结果展示 -->
-        <section id="result-section" class="result-section" style="display: none;">
-            <!-- 路线信息卡片 -->
-            <div class="route-info-card" id="route-info-card">
-                <!-- 路线信息将通过JavaScript动态加载 -->
-            </div>
-
-            <!-- 地点列表 -->
-            <div class="places-section">
-                <h3>📍 识别到的地点</h3>
-                <div class="places-list" id="places-list">
-                    <!-- 地点列表将通过JavaScript动态加载 -->
+        <!-- 主要内容区域 -->
+        <main class="main-content">
+            <!-- 输入区域 -->
+            <div class="input-section" id="inputSection">
+                <div class="input-container">
+                    <label for="url-input">小红书笔记链接</label>
+                    <div class="url-input-group">
+                        <input type="text" id="url-input" placeholder="粘贴小红书链接或包含链接的文本..." required>
+                        <button type="button" id="parse-btn" class="btn btn-primary">
+                            <span class="btn-text">开始解析</span>
+                        </button>
+                    </div>
+                    <p class="input-hint">
+                        💡 支持直接粘贴小红书链接，也支持粘贴包含链接的完整文本（如复制的小红书分享内容）
+                    </p>
                 </div>
             </div>
 
-            <!-- 地图区域 -->
-            <div class="map-section" id="map-section">
-                <h3>🗺️ 路线地图</h3>
-                <div class="map-placeholder">
-                    <p>地图组件将在这里显示</p>
+            <!-- 解析结果区域 -->
+            <div class="result-section" id="result-section" style="display: none;">
+                <!-- 路线信息卡片 -->
+                <div class="route-info-card" id="route-info-card">
+                    <!-- 路线信息将通过JavaScript动态加载 -->
+                </div>
+                
+                <!-- 多路线展示区域 -->
+                <div class="routes-section" id="routes-section">
+                    <h3>🗺️ 识别到的路线</h3>
+                    <div class="routes-list" id="routes-list">
+                        <!-- 多路线将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+                
+                <!-- 地点列表 -->
+                <div class="places-section">
+                    <h3>📍 所有地点汇总</h3>
+                    <div class="places-list" id="places-list">
+                        <!-- 地点列表将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+                
+                <!-- 地图区域 -->
+                <div class="map-container">
+                    <div id="map" class="map"></div>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="route-actions">
+                    <button type="button" id="open-map-btn" class="btn btn-secondary">
+                        📱 在地图App中打开
+                    </button>
+                    <button type="button" id="save-route-btn" class="btn btn-success">
+                        💾 保存路线
+                    </button>
                 </div>
             </div>
 
-            <!-- 操作按钮 -->
-            <div class="action-buttons">
-                <button id="open-map-btn" class="btn btn-secondary">
-                    <span class="btn-icon">🗺️</span>
-                    在地图App中打开
-                </button>
-                <button id="save-route-btn" class="btn btn-success">
-                    <span class="btn-icon">💾</span>
-                    保存路线
-                </button>
+            <!-- 加载状态 -->
+            <div class="loading-section" id="loading-section" style="display: none;">
+                <div class="loading-content">
+                    <p class="loading-text">AI正在解析笔记内容，预计需要30s左右，请等待...</p>
+                    <div class="spinner large"></div>
+                </div>
             </div>
-        </section>
+
+            <!-- 错误提示 -->
+            <div class="error-section" id="error-section" style="display: none;">
+                <div class="error-content">
+                    <span class="error-icon">❌</span>
+                    <p id="error-message">解析失败</p>
+                    <button type="button" id="retry-btn" class="btn btn-primary">重试</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部 -->
+        <footer class="footer">
+            <p>&copy; 2025 路线导入器 - 让旅行更简单</p>
+        </footer>
     </div>
 
     <!-- 保存路线模态框 -->
-    <div id="save-modal" class="modal">
+    <div id="save-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>💾 保存路线</h3>
@@ -104,6 +120,53 @@
                     <button type="submit" class="btn btn-primary">保存</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 地图选择模态框 -->
+    <div id="map-select-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🗺️ 选择地图应用</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="map-options">
+                <div class="map-option" onclick="openInGoogleMaps()">
+                    <div class="map-icon">🌐</div>
+                    <div class="map-info">
+                        <h4>谷歌地图</h4>
+                        <p>使用Google Maps打开路线</p>
+                    </div>
+                    <div class="map-status">✅</div>
+                </div>
+                <div class="map-option disabled">
+                    <div class="map-icon">🍎</div>
+                    <div class="map-info">
+                        <h4>苹果地图</h4>
+                        <p>使用Apple Maps打开路线</p>
+                    </div>
+                    <div class="map-status">🚧</div>
+                </div>
+                <div class="map-option disabled">
+                    <div class="map-icon">🗺️</div>
+                    <div class="map-info">
+                        <h4>高德地图</h4>
+                        <p>使用高德地图打开路线</p>
+                    </div>
+                    <div class="map-status">🚧</div>
+                </div>
+                <div class="map-option disabled">
+                    <div class="map-icon">📍</div>
+                    <div class="map-info">
+                        <h4>百度地图</h4>
+                        <p>使用百度地图打开路线</p>
+                    </div>
+                    <div class="map-status">🚧</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('map-select-modal').style.display='none'">取消</button>
+            </div>
         </div>
     </div>
 
